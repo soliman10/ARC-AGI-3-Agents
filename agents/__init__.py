@@ -13,6 +13,7 @@ from .templates.multimodal import MultiModalLLM
 from .templates.random_agent import Random
 from .templates.reasoning_agent import ReasoningAgent
 from .templates.smolagents import SmolCodingAgent, SmolVisionAgent
+from .templates.graph_explorer import GraphExplorer
 
 load_dotenv()
 
@@ -32,6 +33,7 @@ AVAILABLE_AGENTS["reasoningagent"] = ReasoningAgent
 __all__ = [
     "Swarm",
     "Random",
+    "GraphExplorer",
     "LangGraphFunc",
     "LangGraphTextOnly",
     "LangGraphThinking",
