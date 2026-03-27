@@ -155,6 +155,7 @@ class GraphExplorer(Agent):
         self.graph = WorldGraph()
         self.current_state_id: Optional[str] = None
         self.total_reward = 0.0
+        self._last_action: Optional[GameAction] = None  # Track last action for graph updates
 
         # Seed based on game_id for reproducibility
         seed = int(time.time() * 1000000) + hash(self.game_id) % 1000000
@@ -182,8 +183,22 @@ class GraphExplorer(Agent):
         self.current_state_id = state_id
         self.graph.add_state(state_id, embedding)
 
-        # Get action space (exclude RESET unless needed)
-        available = latest_frame.available_actions
+        # Get action space (convert int IDs to GameAction enums)
+        raw_available = latest_frame.available_actions if latest_frame.available_actions else []
+        available = []
+        for a in raw_available:
+            if isinstance(a, GameAction):
+                available.append(a)
+            else:
+                # Try to convert int to GameAction
+                try:
+                    for ga in GameAction:
+                        if ga.value == a:
+                            available.append(ga)
+                            break
+                except:
+                    pass
+
         if not available:
             available = [a for a in GameAction if a != GameAction.RESET]
 
@@ -205,7 +220,8 @@ class GraphExplorer(Agent):
 
             if path and len(path) > 0:
                 # This shouldn't happen in single-agent context, but safety
-                action = GameAction.from_value(path[0]) if path else available[0]
+                action_val = path[0]
+                action = [a for a in GameAction if a.value == action_val][0] if action_val else available[0]
             else:
                 # Priority 3: Exploitation - pick best known action
                 if current_node and current_node.rewards:
@@ -213,10 +229,13 @@ class GraphExplorer(Agent):
                         current_node.rewards.keys(),
                         key=lambda a: current_node.rewards[a]
                     )
-                    action = GameAction.from_value(best_action)
+                    action = [a for a in GameAction if a.value == best_action][0]
                 else:
                     # Fallback: random
                     action = random.choice(available)
+
+        # Save action for graph update
+        self._last_action = action
 
         # Prepare action with data if needed
         if hasattr(action, 'is_simple') and action.is_simple():
@@ -240,28 +259,24 @@ class GraphExplorer(Agent):
 
     def append_frame(self, frame: FrameData) -> None:
         """Record frame and update graph."""
-        # Get previous state
+        # Get previous state and action
         prev_state_id = self.current_state_id
+        last_action = self._last_action
 
         # Add new state
         embedding, new_state_id = self.encoder.encode(frame)
         self.graph.add_state(new_state_id, embedding)
 
-        # Add edge if we have previous state
-        if prev_state_id and prev_state_id != new_state_id:
+        # Add edge if we have previous state and action
+        if prev_state_id and last_action is not None:
             # Calculate reward from levels completed change
             reward = float(frame.levels_completed)
             self.total_reward += reward
 
-            # Get last action that led here
-            if len(self.frames) >= 2:
-                last_action = self.frames[-1]
-                # Try to infer action from frames
-                action_val = self._infer_action(last_action, frame)
-                if action_val is not None:
-                    prev_node = self.graph.get_node(prev_state_id)
-                    if prev_node:
-                        prev_node.add_transition(action_val, new_state_id, reward)
+            action_key = last_action.value if isinstance(last_action, GameAction) else last_action
+            prev_node = self.graph.get_node(prev_state_id)
+            if prev_node:
+                prev_node.add_transition(action_key, new_state_id, reward)
 
         # Record frame
         super().append_frame(frame)
