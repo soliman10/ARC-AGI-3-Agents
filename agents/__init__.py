@@ -14,6 +14,7 @@ from .templates.random_agent import Random
 from .templates.reasoning_agent import ReasoningAgent
 from .templates.smolagents import SmolCodingAgent, SmolVisionAgent
 from .templates.graph_explorer import GraphExplorer
+from .templates.improved_explorer import ImprovedExplorer
 
 load_dotenv()
 
@@ -34,6 +35,7 @@ __all__ = [
     "Swarm",
     "Random",
     "GraphExplorer",
+    "ImprovedExplorer",
     "LangGraphFunc",
     "LangGraphTextOnly",
     "LangGraphThinking",
