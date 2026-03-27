@@ -15,6 +15,7 @@ from .templates.reasoning_agent import ReasoningAgent
 from .templates.smolagents import SmolCodingAgent, SmolVisionAgent
 from .templates.graph_explorer import GraphExplorer
 from .templates.improved_explorer import ImprovedExplorer
+from .templates.click_heuristic import ClickHeuristicAgent, SmartExplorerAgent
 
 load_dotenv()
 
@@ -36,6 +37,8 @@ __all__ = [
     "Random",
     "GraphExplorer",
     "ImprovedExplorer",
+    "ClickHeuristicAgent",
+    "SmartExplorerAgent",
     "LangGraphFunc",
     "LangGraphTextOnly",
     "LangGraphThinking",
